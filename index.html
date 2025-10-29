@@ -726,11 +726,10 @@
                 // [중요] 1. 아래 주석을 제거하고
                 // [중요] 2. 'YOUR_..._URL' 부분에 Google Apps Script 배포 URL을 붙여넣으세요.
                 
-                const webAppUrl = 'YOUR_GOOGLE_APPS_SCRIPT_WEB_APP_URL';
+                const webAppUrl = 'https://script.google.com/macros/s/AKfycbxCuis0S2MfZ4Pumg1lwmrSgZq3kt-0CJ7sXMMtVMYoYfVl9DphPF9qNs7U-jhyhlmT/exec';
                 
                 
-                /* // [실제 연동 코드] 1. 이 줄의 주석을 제거하세요.
-                
+                               
                 try {
                     // CORS 모드로 JSON 응답을 기대합니다.
                     const response = await fetch(webAppUrl, {
@@ -770,26 +769,10 @@
                     showMessage('저장에 실패했습니다. (네트워크 또는 CORS 오류 - 콘솔 확인)', 'error');
                 }
                 
-                */ // [실제 연동 코드] 2. 이 줄의 주석을 제거하세요.
-                
+                               
 
                 
-                // --- 시뮬레이션 코드 ---
-                // [중요] 실제 연동 코드를 활성화한 후, 아래 시뮬레이션 코드를 삭제하거나 주석 처리하세요.
-                
-                await new Promise(resolve => setTimeout(resolve, 1000)); // 1초 대기
-                
-                console.log('제출된 데이터 (시뮬레이션):', data);
-                showMessage('성공적으로 저장되었습니다. (시뮬레이션)', 'success');
-                
-                // 성공 후 폼 초기화 및 1단계로 복귀
-                tradeForm.reset();
-                document.getElementById('date').valueAsDate = new Date(); // 날짜 재설정
-                step2.classList.add('hidden');
-                step1.classList.remove('hidden');
-                
-                // --- 시뮬레이션 종료 ---
-
+         
 
                 // 로딩 상태 해제
                 submitText.classList.remove('hidden');
