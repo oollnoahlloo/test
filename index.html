@@ -1,0 +1,808 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>주식 거래 입력 양식</title>
+    <!-- Tailwind CSS 로드 -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* 사용자 정의 스타일 */
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+            background-color: #f8fafc; /* slate-50 */
+        }
+        /* 로딩 스피너 */
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        .spinner {
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            border-left-color: #0ea5e9; /* sky-500 */
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+        }
+        
+        /* 폼 전환 애니메이션 */
+        .form-step {
+            transition: opacity 0.3s ease-in-out, transform 0.3s ease-in-out;
+        }
+        .form-step.hidden {
+            opacity: 0;
+            transform: translateY(20px);
+            position: absolute;
+            width: 100%;
+        }
+        
+        /* 필수 항목 별표 */
+        .required-label::after {
+            content: '*';
+            color: #ef4444; /* red-500 */
+            margin-left: 4px;
+        }
+
+        /* 모달 스타일 */
+        .modal-backdrop {
+            transition: opacity 0.2s ease-in-out;
+        }
+        .modal-content {
+            transition: transform 0.3s ease-out, opacity 0.3s ease-out;
+        }
+        .modal.hidden .modal-backdrop {
+            opacity: 0;
+        }
+        .modal.hidden .modal-content {
+            opacity: 0;
+            transform: scale(0.95) translateY(-20px);
+        }
+        
+        /* Firefox에서 number type의 화살표 숨기기 */
+        input[type=number] {
+            -moz-appearance: textfield;
+        }
+        /* Webkit(Chrome, Safari)에서 number type의 화살표 숨기기 */
+        input[type=number]::-webkit-inner-spin-button,
+        input[type=number]::-webkit-outer-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+    </style>
+    <script>
+        // Tailwind CSS 설정 (커스텀 폰트 등)
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        sky: {
+                            50: '#f0f9ff',
+                            100: '#e0f2fe',
+                            200: '#bae6fd',
+                            300: '#7dd3fc',
+                            400: '#38bdf8',
+                            500: '#0ea5e9',
+                            600: '#0284c7',
+                            700: '#0369a1',
+                            800: '#075985',
+                            900: '#0c4a6e',
+                            950: '#082f49'
+                        },
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-slate-50 min-h-screen flex items-center justify-center p-4">
+
+    <!-- 메시지 박스 (알림창) -->
+    <div id="messageBox" class="hidden fixed top-5 right-5 max-w-sm z-50 rounded-lg shadow-lg overflow-hidden">
+        <div id="messageContent" class="p-4 text-white">
+            <!-- 메시지 내용이 여기에 삽입됩니다 -->
+        </div>
+    </div>
+
+    <!-- 메인 폼 컨테이너 -->
+    <div class="w-full max-w-xl bg-white rounded-2xl shadow-xl p-6 sm:p-10">
+        
+        <div class="flex items-center justify-center mb-8">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-sky-600" viewBox="0 0 20 20" fill="currentColor">
+                <path d="M4 4a2 2 0 00-2 2v1h16V6a2 2 0 00-2-2H4z" />
+                <path fill-rule="evenodd" d="M18 9H2v5a2 2 0 002 2h12a2 2 0 002-2V9zm-7 3a1 1 0 011-1h2a1 1 0 110 2h-2a1 1 0 01-1-1z" clip-rule="evenodd" />
+            </svg>
+            <h1 class="text-3xl font-bold text-slate-800 ml-3">거래 내역 입력</h1>
+        </div>
+
+        <form id="tradeForm" class="relative overflow-hidden">
+            <!-- 1단계: 기본 정보 -->
+            <div id="step1" class="space-y-5">
+                <h2 class="text-xl font-semibold text-sky-700 border-b-2 border-sky-200 pb-3 mb-6">1. 기본 정보</h2>
+                
+                <!-- B열: 구분 -->
+                <div>
+                    <div class="flex items-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2 text-sky-600" viewBox="0 0 20 20" fill="currentColor">
+                            <path d="M5 4a1 1 0 00-2 0v2.268a2 2 0 000 3.464V16a1 1 0 102 0v-6.268a2 2 0 000-3.464V4zM11 4a1 1 0 10-2 0v6.268a2 2 0 000 3.464V16a1 1 0 102 0V13.732a2 2 0 000-3.464V4zM17 4a1 1 0 10-2 0v2.268a2 2 0 000 3.464V16a1 1 0 102 0v-6.268a2 2 0 000-3.464V4z" />
+                        </svg>
+                        <label for="category" class="block text-sm font-medium text-slate-700 required-label">구분</label>
+                    </div>
+                    <select id="category" name="category" required class="mt-2 block w-full px-3 py-2.5 bg-white border border-slate-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-sky-600 focus:border-sky-600 sm:text-sm transition duration-150 ease-in-out">
+                        <option value="매수">매수</option>
+                        <option value="매도">매도</option>
+                        <option value="이체">이체</option>
+                        <option value="기타">기타</option>
+                        <option value="-">-</option>
+                    </select>
+                </div>
+                
+                <!-- C열: 일자 -->
+                <div>
+                    <div class="flex items-center">
+                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2 text-sky-600" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clip-rule="evenodd" />
+                        </svg>
+                        <label for="date" class="block text-sm font-medium text-slate-700 required-label">일자</label>
+                    </div>
+                    <input type="date" id="date" name="date" required class="mt-2 block w-full px-3 py-2.5 border border-slate-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-sky-600 focus:border-sky-600 sm:text-sm transition duration-150 ease-in-out">
+                </div>
+
+                <!-- D열: 계좌 -->
+                <div>
+                    <div class="flex justify-between items-center">
+                        <div class="flex items-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2 text-sky-600" viewBox="0 0 20 20" fill="currentColor">
+                                <path d="M4 4a2 2 0 00-2 2v1h16V6a2 2 0 00-2-2H4z" />
+                                <path fill-rule="evenodd" d="M18 9H2v5a2 2 0 002 2h12a2 2 0 002-2V9zm-7 3a1 1 0 011-1h2a1 1 0 110 2h-2a1 1 0 01-1-1z" clip-rule="evenodd" />
+                            </svg>
+                            <label for="account" class="block text-sm font-medium text-slate-700 required-label">계좌</label>
+                        </div>
+                        <div class="space-x-2">
+                            <button type="button" id="manageAccountBtn" class="js-manage-list-btn text-xs font-medium text-sky-600 hover:text-sky-800 transition duration-150" data-list-id="account" data-list-name="계좌">[목록 관리]</button>
+                            <button type="button" id="addAccountBtn" class="js-add-list-btn text-xs font-medium text-sky-600 hover:text-sky-800 transition duration-150" data-list-id="account" data-list-name="계좌">[+ 목록에 추가]</button>
+                        </div>
+                    </div>
+                    <select id="account" name="account" required class="mt-2 block w-full px-3 py-2.5 bg-white border border-slate-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-sky-600 focus:border-sky-600 sm:text-sm transition duration-150 ease-in-out">
+                        <option value="미래에셋증권">미래에셋증권</option>
+                        <option value="연금_미래에셋증권">연금_미래에셋증권</option>
+                        <option value="금현물_미래에셋증권">금현물_미래에셋증권</option>
+                        <option value="대신증권">대신증권</option>
+                        <option value="ISA_미래에셋증권">ISA_미래에셋증권</option>
+                        <option value="한국투자증권">한국투자증권</option>
+                        <option value="나무증권">나무증권</option>
+                    </select>
+                </div>
+
+                <!-- E열: 종목명 -->
+                <div>
+                    <div class="flex justify-between items-center">
+                        <div class="flex items-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2 text-sky-600" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M17.707 9.293a1 1 0 010 1.414l-7 7a1 1 0 01-1.414 0l-7-7A.997.997 0 012 10V5a1 1 0 011-1h5a.997.997 0 01.707.293l7 7zM5 6a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd" />
+                            </svg>
+                            <label for="itemName" class="block text-sm font-medium text-slate-700 required-label">종목명</label>
+                        </div>
+                        <div class="space-x-2">
+                            <button type="button" id="manageItemBtn" class="js-manage-list-btn text-xs font-medium text-sky-600 hover:text-sky-800 transition duration-150" data-list-id="itemName" data-list-name="종목명">[목록 관리]</button>
+                            <button type="button" id="addItemBtn" class="js-add-list-btn text-xs font-medium text-sky-600 hover:text-sky-800 transition duration-150" data-list-id="itemName" data-list-name="종목명">[+ 목록에 추가]</button>
+                        </div>
+                    </div>
+                    <!-- 자동완성을 위한 datalist 사용 -->
+                    <input type="text" id="itemName" name="itemName" list="itemNameList" required class="mt-2 block w-full px-3 py-2.5 border border-slate-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-sky-600 focus:border-sky-600 sm:text-sm transition duration-150 ease-in-out" placeholder="종목명 입력 또는 선택">
+                    <datalist id="itemNameList">
+                        <option value="삼성전자"></option>
+                        <option value="삼성전자우"></option>
+                        <option value="금현물 99.99 1kg"></option>
+                        <option value="MSFT"></option>
+                        <option value="NVDA"></option>
+                        <option value="QQQ"></option>
+                        <option value="AAPL"></option>
+                        <option value="ABBV"></option>
+                        <option value="IVV"></option>
+                        <option value="JNJ"></option>
+                        <option value="KO"></option>
+                        <option value="MMM"></option>
+                        <option value="O"></option>
+                        <option value="PG"></option>
+                        <option value="TSM"></option>
+                        <option value="WBD"></option>
+                        <option value="GOOG"></option>
+                        <option value="ACE 미국S&P500"></option>
+                        <option value="RISE 미국나스닥100"></option>
+                        <option value="TIGER 미국배당다우존스"></option>
+                    </datalist>
+                </div>
+
+                <!-- 1단계 버튼 -->
+                <button type="button" id="nextBtn" class="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-base font-medium text-white bg-sky-600 hover:bg-sky-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-sky-500 transition duration-150 ease-in-out">
+                    다음 단계로
+                </button>
+            </div>
+
+            <!-- 2단계: 거래 상세 정보 -->
+            <div id="step2" class="space-y-5 hidden">
+                <h2 class="text-xl font-semibold text-sky-700 border-b-2 border-sky-200 pb-3 mb-6">2. 거래 상세 정보</h2>
+
+                <!-- K열: 거래량 -->
+                <div>
+                    <div class="flex items-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2 text-sky-600" viewBox="0 0 20 20" fill="currentColor">
+                           <path d="M7 3a1 1 0 000 2h6a1 1 0 100-2H7zM4 7a1 1 0 011-1h10a1 1 0 110 2H5a1 1 0 01-1-1zM2 11a1 1 0 011-1h14a1 1 0 110 2H3a1 1 0 01-1-1zM1 15a1 1 0 100 2h18a1 1 0 100-2H1z" />
+                        </svg>
+                         <label for="volume" class="block text-sm font-medium text-slate-700 required-label">거래량</label>
+                    </div>
+                    <input type="text" inputmode="numeric" id="volume" name="volume" required placeholder="0" class="js-format-number mt-2 block w-full px-3 py-2.5 border border-slate-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-sky-600 focus:border-sky-600 sm:text-sm transition duration-150 ease-in-out placeholder:text-slate-400">
+                </div>
+                
+                <!-- L열: 체결단가 -->
+                <div>
+                    <div class="flex items-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2 text-sky-600" viewBox="0 0 20 20" fill="currentColor">
+                           <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.75 6.75a.75.75 0 00-1.5 0v1.69L6.03 7.22a.75.75 0 00-1.06 1.06l1.22 1.22H3.75a.75.75 0 000 1.5h2.44l-1.22 1.22a.75.75 0 101.06 1.06l1.22-1.22v1.69a.75.75 0 001.5 0v-1.69l1.22 1.22a.75.75 0 101.06-1.06l-1.22-1.22h2.44a.75.75 0 000-1.5h-2.44l1.22-1.22a.75.75 0 00-1.06-1.06l-1.22 1.22V6.75z" clip-rule="evenodd" />
+                        </svg>
+                        <label for="price" class="block text-sm font-medium text-slate-700 required-label">체결단가</label>
+                    </div>
+                    <input type="text" inputmode="numeric" id="price" name="price" required placeholder="0" class="js-format-number mt-2 block w-full px-3 py-2.5 border border-slate-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-sky-600 focus:border-sky-600 sm:text-sm transition duration-150 ease-in-out placeholder:text-slate-400">
+                </div>
+
+                <!-- N열: 거래시점 평단가 -->
+                <div>
+                     <div class="flex items-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2 text-sky-600" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M6 2a2 2 0 00-2 2v12a2 2 0 002 2h8a2 2 0 002-2V4a2 2 0 00-2-2H6zm1 2a1 1 0 000 2h6a1 1 0 100-2H7zM6 7a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm0 4a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clip-rule="evenodd" />
+                        </svg>
+                        <label for="avgPrice" class="block text-sm font-medium text-slate-700 required-label">거래시점 평단가</label>
+                    </div>
+                    <input type="text" inputmode="numeric" id="avgPrice" name="avgPrice" required placeholder="0" class="js-format-number mt-2 block w-full px-3 py-2.5 border border-slate-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-sky-600 focus:border-sky-600 sm:text-sm transition duration-150 ease-in-out placeholder:text-slate-400">
+                </div>
+
+                <!-- O열: 거래 후 잔고 -->
+                <div>
+                    <div class="flex items-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2 text-sky-600" viewBox="0 0 20 20" fill="currentColor">
+                           <path d="M4 3a2 2 0 100 4h12a2 2 0 100-4H4z" />
+                           <path fill-rule="evenodd" d="M3 8h14v7a2 2 0 01-2 2H5a2 2 0 01-2-2V8zm5 3a1 1 0 011-1h2a1 1 0 110 2H9a1 1 0 01-1-1z" clip-rule="evenodd" />
+                        </svg>
+                        <label for="balance" class="block text-sm font-medium text-slate-700 required-label">거래 후 잔고</label>
+                    </div>
+                    <input type="text" inputmode="numeric" id="balance" name="balance" required placeholder="0" class="js-format-number mt-2 block w-full px-3 py-2.5 border border-slate-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-sky-600 focus:border-sky-600 sm:text-sm transition duration-150 ease-in-out placeholder:text-slate-400">
+                </div>
+
+                <!-- P열: 수수료 등 -->
+                <div>
+                    <div class="flex items-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2 text-sky-600" viewBox="0 0 20 20" fill="currentColor">
+                           <path fill-rule="evenodd" d="M5 2a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V4a2 2 0 00-2-2H5zm3 2a1 1 0 000 2h4a1 1 0 100-2H8zm0 3a1 1 0 100 2h4a1 1 0 100-2H8zm-1 3a1 1 0 011-1h2a1 1 0 110 2H8a1 1 0 01-1-1zm-1 4a.5.5 0 00-.5.5v1a.5.5 0 00.5.5h1a.5.5 0 00.5-.5v-1a.5.5 0 00-.5-.5H6zM8 15a.5.5 0 01.5-.5h1a.5.5 0 01.5.5v1a.5.5 0 01-.5.5h-1a.5.5 0 01-.5-.5v-1zM11 14.5a.5.5 0 00-.5.5v1a.5.5 0 00.5.5h1a.5.5 0 00.5-.5v-1a.5.5 0 00-.5-.5h-1z" clip-rule="evenodd" />
+                        </svg>
+                        <label for="fees" class="block text-sm font-medium text-slate-700">수수료 등</label>
+                    </div>
+                    <input type="text" inputmode="numeric" id="fees" name="fees" placeholder="0" class="js-format-number mt-2 block w-full px-3 py-2.5 border border-slate-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-sky-600 focus:border-sky-600 sm:text-sm transition duration-150 ease-in-out placeholder:text-slate-400">
+                </div>
+                
+                <!-- R열: 설명 -->
+                <div>
+                    <div class="flex items-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2 text-sky-600" viewBox="0 0 20 20" fill="currentColor">
+                            <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
+                        </svg>
+                        <label for="description" class="block text-sm font-medium text-slate-700">설명</label>
+                    </div>
+                    <textarea id="description" name="description" rows="3" placeholder="메모 사항" class="mt-2 block w-full px-3 py-2.5 border border-slate-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-sky-600 focus:border-sky-600 sm:text-sm transition duration-150 ease-in-out placeholder:text-slate-400"></textarea>
+                </div>
+
+                <!-- M(체결금액), Q(손익)는 자동 계산되므로 입력란 제외 -->
+                <p class="text-sm text-slate-500 text-center pt-2">
+                    * 체결금액 및 손익은 시트에서 자동 계산됩니다.
+                </p>
+
+                <!-- 버튼 그룹 -->
+                <div class="flex gap-4 pt-4">
+                    <button type="button" id="prevBtn" class="w-1/3 flex justify-center py-3 px-4 border border-slate-300 rounded-lg shadow-sm text-base font-medium text-slate-700 bg-white hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-sky-500 transition duration-150 ease-in-out">
+                        이전
+                    </button>
+                    <button type="submit" id="submitBtn" class="w-2/3 flex justify-center items-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-base font-medium text-white bg-sky-600 hover:bg-sky-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-sky-500 transition duration-150 ease-in-out">
+                        <span id="submitText">스프레드시트에 저장</span>
+                        <div id="loadingSpinner" class="spinner hidden"></div>
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <!-- '목록에 추가' 모달 -->
+    <div id="addModal" class="modal hidden fixed inset-0 z-50 flex items-center justify-center p-4">
+        <!-- 배경 -->
+        <div class="modal-backdrop fixed inset-0 bg-slate-900/50 backdrop-blur-sm"></div>
+        <!-- 컨텐츠 -->
+        <div class="modal-content bg-white rounded-lg shadow-xl w-full max-w-sm p-6 z-10">
+            <h3 class="text-lg font-medium leading-6 text-slate-900 mb-4" id="addModalTitle">새 항목 추가</h3>
+            <div>
+                <label for="newItemInput" class="sr-only">새 항목 이름</label>
+                <input type="text" id="newItemInput" class="block w-full px-3 py-2.5 border border-slate-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-sky-600 focus:border-sky-600 sm:text-sm" placeholder="추가할 항목 입력">
+            </div>
+            <div class="mt-6 flex justify-end space-x-3">
+                <button type="button" id="cancelAddItem" class="px-4 py-2 text-sm font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-400 transition">취소</button>
+                <button type="button" id="confirmAddItem" class="px-4 py-2 text-sm font-medium text-white bg-sky-600 hover:bg-sky-700 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-sky-500 transition">추가</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- '목록 관리' 모달 -->
+    <div id="manageModal" class="modal hidden fixed inset-0 z-50 flex items-center justify-center p-4">
+        <!-- 배경 -->
+        <div class="modal-backdrop fixed inset-0 bg-slate-900/50 backdrop-blur-sm"></div>
+        <!-- 컨텐츠 -->
+        <div class="modal-content bg-white rounded-lg shadow-xl w-full max-w-md p-6 z-10">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-medium leading-6 text-slate-900" id="manageModalTitle">목록 관리</h3>
+                <button type="button" id="closeManageModal" class="text-slate-400 hover:text-slate-600 transition">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+            <div id="manageListContainer" class="max-h-60 overflow-y-auto space-y-2 pr-2">
+                <!-- 목록이 여기에 동적으로 생성됩니다 -->
+            </div>
+            <div class="mt-6 flex justify-end">
+                <button type="button" id="doneManageModal" class="px-5 py-2 text-sm font-medium text-white bg-sky-600 hover:bg-sky-700 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-sky-500 transition">완료</button>
+            </div>
+        </div>
+    </div>
+
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const tradeForm = document.getElementById('tradeForm');
+            const step1 = document.getElementById('step1');
+            const step2 = document.getElementById('step2');
+            const nextBtn = document.getElementById('nextBtn');
+            const prevBtn = document.getElementById('prevBtn');
+            const submitBtn = document.getElementById('submitBtn');
+            const submitText = document.getElementById('submitText');
+            const loadingSpinner = document.getElementById('loadingSpinner');
+            const messageBox = document.getElementById('messageBox');
+            const messageContent = document.getElementById('messageContent');
+            
+            // 오늘 날짜로 기본 설정
+            document.getElementById('date').valueAsDate = new Date();
+
+            // --- 1단계/2단계 전환 ---
+
+            nextBtn.addEventListener('click', function() {
+                // 1단계의 필수 항목 유효성 검사
+                let step1Valid = true;
+                const step1Inputs = step1.querySelectorAll('input[required], select[required]');
+                step1Inputs.forEach(input => {
+                    if (!input.value) {
+                        step1Valid = false;
+                        // 필드가 비어있을 경우 시각적 피드백 (선택 사항)
+                        input.classList.add('border-red-500', 'focus:ring-red-500');
+                    } else {
+                        input.classList.remove('border-red-500', 'focus:ring-red-500');
+                    }
+                });
+
+                if (step1Valid) {
+                    step1.classList.add('hidden');
+                    step2.classList.remove('hidden');
+                    window.scrollTo(0, 0); // 페이지 상단으로 스크롤
+                } else {
+                    showMessage('1단계의 필수 항목(*)을 모두 입력해주세요.', 'error');
+                }
+            });
+
+            prevBtn.addEventListener('click', function() {
+                step2.classList.add('hidden');
+                step1.classList.remove('hidden');
+                window.scrollTo(0, 0); // 페이지 상단으로 스크롤
+            });
+
+            // --- 메시지 박스 함수 ---
+            function showMessage(message, type = 'info') {
+                messageContent.textContent = message;
+                
+                // 이전 클래스 모두 제거
+                messageBox.classList.remove('bg-sky-500', 'bg-red-500', 'bg-green-500', 'bg-slate-600');
+                
+                if (type === 'success') {
+                    messageBox.classList.add('bg-green-500');
+                } else if (type === 'error') {
+                    messageBox.classList.add('bg-red-500');
+                } else if (type === 'loading') {
+                    messageBox.classList.add('bg-slate-600');
+                } else {
+                    messageBox.classList.add('bg-sky-500');
+                }
+                
+                messageBox.classList.remove('hidden');
+
+                // 로딩 중이 아닐 때만 3초 뒤 자동 숨김
+                if (type !== 'loading') {
+                    setTimeout(() => {
+                        messageBox.classList.add('hidden');
+                    }, 3000);
+                }
+            }
+            
+            // --- LocalStorage 키 정의 ---
+            const ACCOUNT_LIST_KEY = 'stockFormAccountList';
+            const ITEM_LIST_KEY = 'stockFormItemList';
+            
+            // --- 목록 데이터 관리 객체 ---
+            const listManager = {
+                // 초기 기본 목록 설정
+                defaultLists: {
+                    account: [
+                        "미래에셋증권", "연금_미래에셋증권", "금현물_미래에셋증권", 
+                        "대신증권", "ISA_미래에셋증권", "한국투자증권", "나무증권"
+                    ],
+                    itemName: [
+                        "삼성전자", "삼성전자우", "금현물 99.99 1kg", "MSFT", "NVDA", "QQQ", 
+                        "AAPL", "ABBV", "IVV", "JNJ", "KO", "MMM", "O", "PG", 
+                        "TSM", "WBD", "GOOG", "ACE 미국S&P500", "RISE 미국나스닥100", 
+                        "TIGER 미국배당다우존스"
+                    ]
+                },
+                
+                // localStorage에서 목록 가져오기 (없으면 기본값 사용)
+                getList: function(listId) {
+                    const key = (listId === 'account') ? ACCOUNT_LIST_KEY : ITEM_LIST_KEY;
+                    const storedList = localStorage.getItem(key);
+                    if (storedList) {
+                        return JSON.parse(storedList);
+                    } else {
+                        // 저장된 목록이 없으면 기본 목록을 localStorage에 저장하고 반환
+                        const defaultList = this.defaultLists[listId];
+                        localStorage.setItem(key, JSON.stringify(defaultList));
+                        return defaultList;
+                    }
+                },
+                
+                // localStorage에 목록 저장하기
+                saveList: function(listId, listArray) {
+                    const key = (listId === 'account') ? ACCOUNT_LIST_KEY : ITEM_LIST_KEY;
+                    // 중복 제거 및 정렬
+                    const uniqueAndSortedList = [...new Set(listArray)].sort((a, b) => a.localeCompare(b));
+                    localStorage.setItem(key, JSON.stringify(uniqueAndSortedList));
+                    return uniqueAndSortedList;
+                },
+                
+                // 항목 추가
+                addItem: function(listId, item) {
+                    if (!item || item.trim() === '') return;
+                    let list = this.getList(listId);
+                    list.push(item.trim());
+                    const newList = this.saveList(listId, list);
+                    this.renderListToUI(listId, newList); // UI 업데이트
+                    return newList;
+                },
+
+                // 항목 삭제
+                removeItem: function(listId, item) {
+                    let list = this.getList(listId);
+                    let newList = list.filter(i => i !== item);
+                    this.saveList(listId, newList);
+                    return newList;
+                },
+
+                // <select> 또는 <datalist>에 목록 렌더링
+                renderListToUI: function(listId, listArray) {
+                    const selectEl = document.getElementById(listId);
+                    
+                    if (listId === 'account') { // <select>의 경우
+                        // 현재 선택된 값 임시 저장
+                        const selectedValue = selectEl.value;
+                        selectEl.innerHTML = ''; // 목록 비우기
+                        listArray.forEach(item => {
+                            const option = document.createElement('option');
+                            option.value = item;
+                            option.textContent = item;
+                            if (item === selectedValue) {
+                                option.selected = true; // 이전 선택값 유지
+                            }
+                            selectEl.appendChild(option);
+                        });
+                    } else if (listId === 'itemName') { // <datalist>의 경우
+                        const datalistEl = document.getElementById('itemNameList');
+                        datalistEl.innerHTML = ''; // 목록 비우기
+                        listArray.forEach(item => {
+                            const option = document.createElement('option');
+                            option.value = item;
+                            datalistEl.appendChild(option);
+                        });
+                        // input 필드의 값은 유지 (datelist는 제안 목록일 뿐)
+                    }
+                },
+
+                // 페이지 로드 시 목록 초기화
+                initLists: function() {
+                    this.renderListToUI('account', this.getList('account'));
+                    this.renderListToUI('itemName', this.getList('itemName'));
+                }
+            };
+            
+            // 페이지 로드 시 목록 채우기
+            listManager.initLists();
+
+            // --- '목록에 추가' 모달 관련 ---
+            const addModal = document.getElementById('addModal');
+            const addModalTitle = document.getElementById('addModalTitle');
+            const newItemInput = document.getElementById('newItemInput');
+            const cancelAddItem = document.getElementById('cancelAddItem');
+            const confirmAddItem = document.getElementById('confirmAddItem');
+            let currentListIdToAdd = null;
+
+            document.querySelectorAll('.js-add-list-btn').forEach(button => {
+                button.addEventListener('click', () => {
+                    currentListIdToAdd = button.dataset.listId;
+                    const listName = button.dataset.listName;
+                    addModalTitle.textContent = `새 ${listName} 추가`;
+                    newItemInput.value = '';
+                    addModal.classList.remove('hidden');
+                    newItemInput.focus();
+                });
+            });
+            
+            function closeAddModal() {
+                addModal.classList.add('hidden');
+                currentListIdToAdd = null;
+            }
+
+            cancelAddItem.addEventListener('click', closeAddModal);
+            addModal.querySelector('.modal-backdrop').addEventListener('click', closeAddModal);
+            
+            confirmAddItem.addEventListener('click', () => {
+                const newItem = newItemInput.value.trim();
+                if (newItem && currentListIdToAdd) {
+                    listManager.addItem(currentListIdToAdd, newItem);
+                    
+                    // 종목명 추가 시, input 필드에 바로 해당 값 설정
+                    if (currentListIdToAdd === 'itemName') {
+                        document.getElementById('itemName').value = newItem;
+                    }
+                    // 계좌 추가 시, select에서 해당 값 선택
+                    if (currentListIdToAdd === 'account') {
+                        document.getElementById('account').value = newItem;
+                    }
+
+                    closeAddModal();
+                    showMessage(`'${newItem}' 항목이 추가되었습니다.`, 'success');
+                } else if (!newItem) {
+                    showMessage('추가할 항목의 이름을 입력해주세요.', 'error');
+                    newItemInput.focus();
+                }
+            });
+
+            // 'Enter' 키로 추가
+            newItemInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    confirmAddItem.click();
+                }
+            });
+
+            // --- '목록 관리' 모달 관련 ---
+            const manageModal = document.getElementById('manageModal');
+            const manageModalTitle = document.getElementById('manageModalTitle');
+            const manageListContainer = document.getElementById('manageListContainer');
+            const closeManageModal = document.getElementById('closeManageModal');
+            const doneManageModal = document.getElementById('doneManageModal');
+            let currentListIdToManage = null;
+            
+            document.querySelectorAll('.js-manage-list-btn').forEach(button => {
+                button.addEventListener('click', () => {
+                    currentListIdToManage = button.dataset.listId;
+                    const listName = button.dataset.listName;
+                    manageModalTitle.textContent = `${listName} 목록 관리`;
+                    renderManageList(currentListIdToManage);
+                    manageModal.classList.remove('hidden');
+                });
+            });
+            
+            function renderManageList(listId) {
+                const list = listManager.getList(listId);
+                manageListContainer.innerHTML = '';
+                if (list.length === 0) {
+                    manageListContainer.innerHTML = `<p class="text-slate-500 text-center">목록이 비어있습니다.</p>`;
+                    return;
+                }
+                list.forEach(item => {
+                    const itemEl = document.createElement('div');
+                    itemEl.className = 'flex justify-between items-center p-2 bg-slate-50 rounded-md';
+                    itemEl.innerHTML = `
+                        <span class="text-slate-800">${item}</span>
+                        <button type="button" class="js-delete-item-btn p-1 text-red-500 hover:text-red-700 transition" data-item="${item}">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
+                            </svg>
+                        </button>
+                    `;
+                    manageListContainer.appendChild(itemEl);
+                });
+
+                // 삭제 버튼 이벤트 리스너 (이벤트 위임)
+                manageListContainer.querySelectorAll('.js-delete-item-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        const itemToDelete = e.currentTarget.dataset.item;
+                        const newList = listManager.removeItem(currentListIdToManage, itemToDelete);
+                        // UI 즉시 업데이트 (목록 다시 렌더링)
+                        renderManageList(currentListIdToManage);
+                        // 메인 폼의 목록도 업데이트
+                        listManager.renderListToUI(currentListIdToManage, newList);
+                    });
+                });
+            }
+
+            function closeManageModalFn() {
+                manageModal.classList.add('hidden');
+                currentListIdToManage = null;
+            }
+            
+            closeManageModal.addEventListener('click', closeManageModalFn);
+            doneManageModal.addEventListener('click', closeManageModalFn);
+            manageModal.querySelector('.modal-backdrop').addEventListener('click', closeManageModalFn);
+
+
+            // --- 숫자 콤마 서식 ---
+            document.querySelectorAll('.js-format-number').forEach(input => {
+                input.addEventListener('input', (e) => {
+                    formatNumber(e.target);
+                });
+                // 붙여넣기 시에도 서식 적용
+                input.addEventListener('paste', (e) => {
+                    // 붙여넣기 이벤트는 약간 지연 후 처리해야 값이 반영됨
+                    setTimeout(() => formatNumber(e.target), 0);
+                });
+            });
+
+            function formatNumber(input) {
+                // 숫자와 소수점만 남김 (첫 번째 소수점만 허용)
+                let value = input.value.replace(/[^\d.]/g, '');
+                const parts = value.split('.');
+                let integerPart = parts[0];
+                let decimalPart = parts[1];
+
+                // 정수 부분에 콤마 추가
+                integerPart = integerPart.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+
+                // 소수점 처리 (소수점이 여러 개 입력된 경우, 두 번째부터 무시)
+                if (decimalPart !== undefined) {
+                    input.value = integerPart + '.' + decimalPart;
+                } else {
+                    input.value = integerPart;
+                }
+            }
+
+            function unformatNumber(value) {
+                return value.replace(/,/g, '');
+            }
+
+
+            // --- 폼 제출 (Google Apps Script 연동) ---
+            tradeForm.addEventListener('submit', async function(e) {
+                e.preventDefault();
+                
+                // 2단계 유효성 검사
+                let step2Valid = true;
+                const step2Inputs = step2.querySelectorAll('input[required]');
+                step2Inputs.forEach(input => {
+                    if (!input.value) {
+                        step2Valid = false;
+                        input.classList.add('border-red-500', 'focus:ring-red-500');
+                    } else {
+                        input.classList.remove('border-red-500', 'focus:ring-red-500');
+                    }
+                });
+                
+                if (!step2Valid) {
+                    showMessage('2단계의 필수 항목(*)을 모두 입력해주세요.', 'error');
+                    return;
+                }
+
+                // 로딩 상태 표시
+                submitText.classList.add('hidden');
+                loadingSpinner.classList.remove('hidden');
+                submitBtn.disabled = true;
+                showMessage('저장 중...', 'loading');
+
+                // FormData 객체로 폼 데이터 수집
+                const formData = new FormData(tradeForm);
+                const data = {};
+                formData.forEach((value, key) => {
+                    // 숫자 필드인 경우 콤마 제거
+                    const inputEl = document.getElementById(key);
+                    if (inputEl && inputEl.classList.contains('js-format-number')) {
+                        data[key] = unformatNumber(value);
+                    } else {
+                        data[key] = value;
+                    }
+                });
+
+                // --- Google Apps Script 연동 ---
+                // [중요] 1. 아래 주석을 제거하고
+                // [중요] 2. 'YOUR_..._URL' 부분에 Google Apps Script 배포 URL을 붙여넣으세요.
+                
+                const webAppUrl = 'YOUR_GOOGLE_APPS_SCRIPT_WEB_APP_URL';
+                
+                
+                /* // [실제 연동 코드] 1. 이 줄의 주석을 제거하세요.
+                
+                try {
+                    // CORS 모드로 JSON 응답을 기대합니다.
+                    const response = await fetch(webAppUrl, {
+                        method: 'POST',
+                        mode: 'cors', // Google Apps Script에서 JSON을 반환하므로 'cors' 사용
+                        cache: 'no-cache',
+                        headers: {
+                            // Apps Script는 text/plain으로 받는 것이 안전할 수 있으므로, 
+                            // GoogleAppsScript.gs 코드에서 JSON.parse(e.postData.contents)를 사용합니다.
+                            'Content-Type': 'text/plain;charset=utf-8', 
+                        },
+                        body: JSON.stringify(data), // 데이터는 JSON 문자열로 전송
+                        redirect: 'follow'
+                    });
+                    
+                    // Apps Script에서 보낸 응답 파싱 (성공 또는 오류)
+                    const result = await response.json(); 
+
+                    if (result.result === "success") {
+                        console.log('Success:', data, 'Row:', result.row);
+                        showMessage('성공적으로 저장되었습니다.', 'success');
+                        
+                        // 성공 후 폼 초기화 및 1단계로 복귀
+                        tradeForm.reset();
+                        document.getElementById('date').valueAsDate = new Date(); // 날짜 재설정
+                        step2.classList.add('hidden');
+                        step1.classList.remove('hidden');
+                    } else {
+                        // Apps Script에서 보낸 오류 메시지 표시
+                        console.error('Script Error:', result.message);
+                        showMessage(`저장에 실패했습니다: ${result.message}`, 'error');
+                    }
+
+                } catch (error) {
+                    // 네트워크 오류 또는 fetch 실패
+                    console.error('Fetch Error:', error);
+                    showMessage('저장에 실패했습니다. (네트워크 또는 CORS 오류 - 콘솔 확인)', 'error');
+                }
+                
+                */ // [실제 연동 코드] 2. 이 줄의 주석을 제거하세요.
+                
+
+                
+                // --- 시뮬레이션 코드 ---
+                // [중요] 실제 연동 코드를 활성화한 후, 아래 시뮬레이션 코드를 삭제하거나 주석 처리하세요.
+                
+                await new Promise(resolve => setTimeout(resolve, 1000)); // 1초 대기
+                
+                console.log('제출된 데이터 (시뮬레이션):', data);
+                showMessage('성공적으로 저장되었습니다. (시뮬레이션)', 'success');
+                
+                // 성공 후 폼 초기화 및 1단계로 복귀
+                tradeForm.reset();
+                document.getElementById('date').valueAsDate = new Date(); // 날짜 재설정
+                step2.classList.add('hidden');
+                step1.classList.remove('hidden');
+                
+                // --- 시뮬레이션 종료 ---
+
+
+                // 로딩 상태 해제
+                submitText.classList.remove('hidden');
+                loadingSpinner.classList.add('hidden');
+                submitBtn.disabled = false;
+                
+                // 2초 뒤 성공 메시지 숨기기 (로딩 메시지가 아닐 경우 showMessage 내부에서 처리됨)
+                if (messageBox.classList.contains('bg-green-500')) {
+                    setTimeout(() => messageBox.classList.add('hidden'), 2000);
+                }
+            });
+        });
+    </script>
+</body>
+</html>
+
