@@ -1,0 +1,898 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>주식 거래 입력 양식</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Noto Sans KR', 'Inter', sans-serif;
+        }
+        /* 스크롤바 디자인 (선택 사항) */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background-color: #94a3b8; /* slate-400 */
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background-color: #64748b; /* slate-500 */
+        }
+        ::-webkit-scrollbar-track {
+            background-color: #e2e8f0; /* slate-200 */
+        }
+        /* 자동완성(datalist) 화살표 숨기기 */
+        input::-webkit-calendar-picker-indicator {
+            display: none;
+            opacity: 0;
+        }
+        /* 모달 배경 */
+        .modal-backdrop {
+            background-color: rgba(0, 0, 0, 0.5);
+        }
+        /* 폼 1단계 -> 2단계 전환 애니메이션 */
+        .form-step {
+            transition: opacity 0.3s ease-out, transform 0.3s ease-out, max-height 0.4s ease-in-out;
+            overflow: hidden;
+        }
+        .form-step-hidden {
+            opacity: 0;
+            transform: translateY(-10px);
+            max-height: 0;
+        }
+        .form-step-visible {
+            opacity: 1;
+            transform: translateY(0);
+            max-height: 1000px; /* 충분한 높이 */
+        }
+    </style>
+</head>
+<body class="bg-slate-100 flex items-center justify-center min-h-screen p-4">
+
+    <div class="w-full max-w-2xl mx-auto">
+        <!-- 타이틀 -->
+        <header class="text-center mb-6">
+            <h1 class="text-3xl font-bold text-slate-800">주식 거래 내역 입력</h1>
+            <p class="text-slate-600 mt-1">입력된 정보는 지정된 스프레드시트에 자동으로 저장됩니다.</p>
+        </header>
+
+        <!-- 메인 카드 -->
+        <div class="bg-white rounded-xl shadow-2xl overflow-hidden">
+            <form id="stockForm" class="relative">
+                <!-- 로딩 스피너 (제출 시) -->
+                <div id="loadingSpinner" class="hidden absolute inset-0 bg-white bg-opacity-80 backdrop-blur-sm flex items-center justify-center z-50">
+                    <svg class="animate-spin h-10 w-10 text-sky-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <span class="ml-3 text-lg text-sky-700 font-semibold">저장 중...</span>
+                </div>
+
+                <!-- 1단계: 기본 정보 -->
+                <div id="formStep1" class="form-step form-step-visible p-6 sm:p-8">
+                    <h2 class="text-xl font-semibold text-slate-700 border-b pb-3 mb-6">1. 기본 정보</h2>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-5">
+                        
+                        <!-- 구분 -->
+                        <div>
+                            <label for="category" class="flex items-center text-sm font-medium text-slate-700 mb-1">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-tags-fill mr-1.5" viewBox="0 0 16 16"><path d="M2 2a1 1 0 0 1 1-1h4.586a1 1 0 0 1 .707.293l7 7a1 1 0 0 1 0 1.414l-4.586 4.586a1 1 0 0 1-1.414 0l-7-7A1 1 0 0 1 2 6.586V2zm3.5 4a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3z"/><path d="M1.293 7.793A1 1 0 0 1 1 7.086V2a1 1 0 0 0-1 1v4.586a1 1 0 0 0 .293.707l7 7a1 1 0 0 0 1.414 0l.043-.043-7.457-7.457z"/></svg>
+                                구분 <span class="text-red-500 ml-1">*</span>
+                            </label>
+                            <select id="category" name="category" required class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500 transition">
+                                <option value="매수">매수</option>
+                                <option value="매도">매도</option>
+                                <option value="이체">이체</option>
+                                <option value="기타">기타</option>
+                                <option value="-">-</option>
+                            </select>
+                        </div>
+
+                        <!-- 일자 -->
+                        <div>
+                            <label for="date" class="flex items-center text-sm font-medium text-slate-700 mb-1">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-calendar-event-fill mr-1.5" viewBox="0 0 16 16"><path d="M4 .5a.5.5 0 0 0-1 0V1H2a2 2 0 0 0-2 2v1h16V3a2 2 0 0 0-2-2h-1V.5a.5.5 0 0 0-1 0V1H4V.5zM16 14V5H0v9a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2zm-3.5-7h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5v-1a.5.5 0 0 1 .5-.5z"/></svg>
+                                일자 <span class="text-red-500 ml-1">*</span>
+                            </label>
+                            <input type="date" id="date" name="date" required class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500 transition">
+                        </div>
+
+                        <!-- 계좌 -->
+                        <div class="md:col-span-2">
+                            <label for="account" class="flex items-center text-sm font-medium text-slate-700 mb-1">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-credit-card-2-front-fill mr-1.5" viewBox="0 0 16 16"><path d="M0 4a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V4zm2.5 1a.5.5 0 0 0-.5.5v1a.5.5 0 0 0 .5.5h2a.5.5 0 0 0 .5-.5v-1a.5.5 0 0 0-.5-.5h-2zm0 3a.5.5 0 0 0-.5.5v1a.5.5 0 0 0 .5.5h5a.5.5 0 0 0 .5-.5v-1a.5.5 0 0 0-.5-.5h-5zm0 3a.5.5 0 0 0-.5.5v1a.5.5 0 0 0 .5.5h1a.5.5 0 0 0 .5-.5v-1a.5.5 0 0 0-.5-.5h-1zm3 0a.5.5 0 0 0-.5.5v1a.5.5 0 0 0 .5.5h1a.5.5 0 0 0 .5-.5v-1a.5.5 0 0 0-.5-.5h-1zm3 0a.5.5 0 0 0-.5.5v1a.5.5 0 0 0 .5.5h1a.5.5 0 0 0 .5-.5v-1a.5.5 0 0 0-.5-.5h-1z"/></svg>
+                                계좌 <span class="text-red-500 ml-1">*</span>
+                            </label>
+                            <div class="flex space-x-2">
+                                <select id="account" name="account" required class="flex-grow w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500 transition">
+                                    <option value="미래에셋증권">미래에셋증권</option>
+                                    <option value="연금_미래에셋증권">연금_미래에셋증권</option>
+                                    <option value="금현물_미래에셋증권">금현물_미래에셋증권</option>
+                                    <option value="대신증권">대신증권</option>
+                                    <option value="ISA_미래에셋증권">ISA_미래에셋증권</option>
+                                    <option value="한국투자증권">한국투자증권</option>
+                                    <option value="나무증권">나무증권</option>
+                                </select>
+                                <button type="button" id="manageAccountList" class="flex-shrink-0 px-3 py-2 text-sm font-semibold text-sky-700 bg-sky-100 hover:bg-sky-200 rounded-lg transition shadow-sm">
+                                    목록 관리
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- 종목명 -->
+                        <div class="md:col-span-2">
+                            <label for="itemName" class="flex items-center text-sm font-medium text-slate-700 mb-1">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-search-heart-fill mr-1.5" viewBox="0 0 16 16"><path d="M6.5 13a6.474 6.474 0 0 0 3.845-1.258h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.008 1.008 0 0 0-.115-.1A6.471 6.471 0 0 0 13 6.5 6.5 6.5 0 0 0 6.5 0a6.5 6.5 0 0 0-6.5 6.5A6.5 6.5 0 0 0 6.5 13zm-2.146-5.146a.5.5 0 0 1 .708 0l.646.647.646-.647a.5.5 0 0 1 .708.708l-.647.646.647.646a.5.5 0 0 1-.708.708l-.646-.647-.646.647a.5.5 0 0 1-.708-.708l.647-.646-.647-.646a.5.5 0 0 1 0-.708z"/></svg>
+                                종목명 <span class="text-red-500 ml-1">*</span>
+                            </label>
+                            <div class="flex space-x-2">
+                                <input type="text" id="itemName" name="itemName" list="itemNameList" required class="flex-grow w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500 transition" placeholder="종목명 입력 또는 선택...">
+                                <datalist id="itemNameList">
+                                    <option value="삼성전자"></option>
+                                    <option value="삼성전자우"></option>
+                                    <option value="금현물 99.99 1kg"></option>
+                                    <option value="MSFT"></option>
+                                    <option value="NVDA"></option>
+                                    <option value="QQQ"></option>
+                                    <option value="AAPL"></option>
+                                    <option value="ABBV"></option>
+                                    <option value="IVV"></option>
+                                    <option value="JNJ"></option>
+                                    <option value="KO"></option>
+                                    <option value="MMM"></option>
+                                    <option value="O"></option>
+                                    <option value="PG"></option>
+                                    <option value="TSM"></option>
+                                    <option value="WBD"></option>
+                                    <option value="GOOG"></option>
+                                    <option value="ACE 미국S&P500"></option>
+                                    <option value="RISE 미국나스닥100"></option>
+                                    <option value="TIGER 미국배당다우존스"></option>
+                                </datalist>
+                                <button type="button" id="manageItemList" class="flex-shrink-0 px-3 py-2 text-sm font-semibold text-sky-700 bg-sky-100 hover:bg-sky-200 rounded-lg transition shadow-sm">
+                                    목록 관리
+                                </button>
+                            </div>
+                        </div>
+
+                    </div>
+                    <div class="mt-8 text-right">
+                        <button type="button" id="nextStepBtn" class="px-6 py-2.5 bg-sky-600 text-white font-semibold rounded-lg shadow-md hover:bg-sky-700 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-opacity-50 transition">
+                            다음 (거래 정보 입력) &rarr;
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 2단계: 거래 상세 정보 -->
+                <div id="formStep2" class="form-step form-step-hidden bg-slate-50 p-6 sm:p-8">
+                    <div class="flex justify-between items-center border-b pb-3 mb-6">
+                        <h2 class="text-xl font-semibold text-slate-700">2. 거래 상세 정보</h2>
+                        <button type="button" id="prevStepBtn" class="text-sm text-sky-600 hover:text-sky-800 font-medium">&larr; 이전 (기본 정보 수정)</button>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-5">
+                        
+                        <!-- 거래량 -->
+                        <div>
+                            <label for="volume" class="flex items-center text-sm font-medium text-slate-700 mb-1">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-stack mr-1.5" viewBox="0 0 16 16"><path d="m14.12 10.163 1.715.858c.22.11.22.424 0 .534L8.267 15.34a.598.598 0 0 1-.534 0L.165 11.555a.299.299 0 0 1 0-.534l1.716-.858 5.317 2.659c.505.252 1.1.252 1.604 0l5.317-2.66zM7.733.063a.598.598 0 0 1 .534 0l7.568 3.784a.3.3 0 0 1 0 .535L8.267 8.165a.598.598 0 0 1-.534 0L.165 4.382a.299.299 0 0 1 0-.535L7.733.063z"/><path d="m14.12 6.576 1.715.858c.22.11.22.424 0 .534l-7.568 3.784a.598.598 0 0 1-.534 0L.165 7.968a.299.299 0 0 1 0-.534l1.716-.858 5.317 2.659c.505.252 1.1.252 1.604 0l5.317-2.66z"/></svg>
+                                거래량 <span class="text-red-500 ml-1">*</span>
+                            </label>
+                            <input type="text" inputmode="numeric" id="volume" name="volume" required class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500 transition" placeholder="예: 10 또는 -10">
+                        </div>
+                        
+                        <!-- 체결단가 -->
+                        <div>
+                            <label for="price" class="flex items-center text-sm font-medium text-slate-700 mb-1">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-coin mr-1.5" viewBox="0 0 16 16"><path d="M5.5 9.511c.076.954.83 1.697 2.182 1.785V12h.6v-.709c1.4-.098 2.218-.846 2.218-1.932 0-.987-.626-1.496-1.745-1.76l-.473-.112V5.57c.6.068.982.396 1.074.85h.7So 0.088-.063.088-0.183z M8 5.438V8.72c-1.41.33-2.131.956-2.131 1.76 0 .699.504 1.205 1.254 1.355V8.5rV5.439z"/></svg>
+                                체결단가 <span class="text-red-500 ml-1">*</span>
+                            </label>
+                            <input type="text" inputmode="numeric" id="price" name="price" required class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500 transition" placeholder="예: 50000.50">
+                        </div>
+
+                        <!-- 거래시점 평단가 -->
+                        <div>
+                            <label for="avgPrice" class="flex items-center text-sm font-medium text-slate-700 mb-1">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-graph-up-arrow mr-1.5" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M0 0h1v15h15v1H0V0Zm10 3.5a.5.5 0 0 1 .5-.5h4a.5.5 0 0 1 .5.5v4a.5.5 0 0 1-1 0V4.9l-3.613 4.417a.5.5 0 0 1-.74.037L7.06 6.767l-3.656 5.027a.5.5 0 0 1-.808-.588l4-5.5a.5.5 0 0 1 .758-.06l2.609 2.61L13.445 4H10.5a.5.5 0 0 1-.5-.5Z"/></svg>
+                                거래시점 평단가 <span class="text-red-500 ml-1">*</span>
+                            </label>
+                            <input type="text" inputmode="numeric" id="avgPrice" name="avgPrice" required class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500 transition" placeholder="0">
+                        </div>
+
+                        <!-- 거래 후 잔고 -->
+                        <div>
+                            <label for="balance" class="flex items-center text-sm font-medium text-slate-700 mb-1">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-piggy-bank-fill mr-1.5" viewBox="0 0 16 16"><path d="M7.964 1.527c-2.977 0-5.571 1.704-6.32 4.125h-.55A1 1 0 0 0 .11 6.824l.254 1.46a1.5 1.5 0 0 0 1.478 1.243h.263c.3.513.688.978 1.145 1.382l-.729 2.477a.5.5 0 0 0 .48.641h2a.5.5 0 0 0 .471-.332l.482-1.351c.635.173 1.31.267 2.011.267.707 0 1.388-.095 2.028-.272l.543 1.372a.5.5 0 0 0 .465.316h2a.5.5 0 0 0 .478-.645l-.76 2.506C13.8 12.513 14.5 11.01 15.03 9.47l.254-1.46a1.5 1.5 0 0 0-1.478-1.243h-.55C13.535 3.23 10.94 1.527 7.964 1.527zM7.5 5.5a.5.5 0 1 1-1 0 .5.5 0 0 1 1 0z"/><path d="M1.5 13.233c-.36.224-.624.59-.7.994a1 1 0 0 0 .332 1.022c.3.22.68.323 1.028.26.43-.077.787-.29 1.05-.599a.5.5 0 0 0-.42-.81c-.375.141-.8.2-1.258.07z"/></svg>
+                                거래 후 잔고 <span class="text-red-500 ml-1">*</span>
+                            </label>
+                            <input type="text" inputmode="numeric" id="balance" name="balance" required class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500 transition" placeholder="0">
+                        </div>
+                        
+                        <!-- 수수료 등 -->
+                        <div>
+                            <label for="fees" class="flex items-center text-sm font-medium text-slate-700 mb-1">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-percent mr-1.5" viewBox="0 0 16 16"><path d="M13.442 2.558a.625.625 0 0 1 0 .884l-10 10a.625.625 0 1 1-.884-.884l10-10a.625.625 0 0 1 .884 0zM4.5 6a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0zm0 7a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0zm7-7a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0z"/></svg>
+                                수수료 등
+                            </label>
+                            <input type="text" inputmode="numeric" id="fees" name="fees" class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500 transition" placeholder="0">
+                        </div>
+
+                        <!-- 설명 -->
+                        <div>
+                            <label for="description" class="flex items-center text-sm font-medium text-slate-700 mb-1">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-chat-left-text-fill mr-1.5" viewBox="0 0 16 16"><path d="M0 2a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H4.414a1 1 0 0 0-.707.293L.854 15.146A.5.5 0 0 1 0 14.793V2zm3.5 1a.5.5 0 0 0 0 1h9a.5.5 0 0 0 0-1h-9zm0 2.5a.5.5 0 0 0 0 1h9a.5.5 0 0 0 0-1h-9zm0 2.5a.5.5 0 0 0 0 1h5a.5.5 0 0 0 0-1h-5z"/></svg>
+                                설명
+                            </label>
+                            <input type="text" id="description" name="description" class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500 transition" placeholder="메모...">
+                        </div>
+                    </div>
+                    
+                    <!-- 시트 자동 계산 안내 -->
+                    <div class="mt-6 text-sm text-slate-500 bg-slate-100 p-3 rounded-lg">
+                        <strong>안내:</strong> '체결금액' 및 '손익'은 시트의 수식에 의해 자동으로 계산됩니다.
+                    </div>
+
+                    <div class="mt-8 flex justify-between items-center">
+                        <button type="button" id="resetFormBtn" class="px-5 py-2.5 text-sm font-medium text-slate-600 bg-slate-200 hover:bg-slate-300 rounded-lg transition">
+                            처음부터 다시
+                        </button>
+                        <button type="submit" id="submitBtn" class="px-8 py-2.5 bg-emerald-600 text-white font-semibold rounded-lg shadow-md hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-opacity-50 transition">
+                            스프레드시트에 저장
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <!-- 하단 푸터 -->
+        <footer class="text-center mt-6 text-sm text-slate-500">
+            Powered by Google Apps Script & Tailwind CSS
+        </footer>
+    </div>
+
+    <!-- 
+      모달 (팝업) 섹션
+    -->
+
+    <!-- 1. 항목 추가 모달 (계좌/종목명 공용) -->
+    <div id="addItemModal" class="fixed inset-0 z-50 hidden items-center justify-center p-4">
+        <div class="modal-backdrop fixed inset-0 transition-opacity" aria-hidden="true"></div>
+        
+        <div class="bg-white rounded-lg shadow-xl w-full max-w-sm p-6 z-10 transform transition-all scale-95 opacity-0">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-semibold text-slate-800" id="addItemModalTitle">새 항목 추가</h3>
+                <button type="button" class="text-slate-400 hover:text-slate-600" onclick="closeModal('addItemModal')">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" class="bi bi-x-lg" viewBox="0 0 16 16"><path d="M2.146 2.854a.5.5 0 1 1 .708-.708L8 7.293l5.146-5.147a.5.5 0 0 1 .708.708L8.707 8l5.147 5.146a.5.5 0 0 1-.708.708L8 8.707l-5.146 5.147a.5.5 0 0 1-.708-.708L7.293 8 2.146 2.854Z"/></svg>
+                </button>
+            </div>
+            <div>
+                <label for="newItemInput" class="block text-sm font-medium text-slate-700 mb-1">추가할 항목 이름:</label>
+                <input type="text" id="newItemInput" class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500 transition">
+                <p id="newItemError" class="text-red-500 text-sm mt-1 hidden">항목 이름을 입력하세요.</p>
+            </div>
+            <div class="mt-6 text-right space-x-2">
+                <button type="button" class="px-4 py-2 text-sm font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg transition" onclick="closeModal('addItemModal')">
+                    취소
+                </button>
+                <button type="button" id="saveNewItemBtn" class="px-4 py-2 text-sm font-medium text-white bg-sky-600 hover:bg-sky-700 rounded-lg shadow-sm transition">
+                    저장
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. 목록 관리 모달 (계좌/종목명 공용) -->
+    <div id="manageListModal" class="fixed inset-0 z-50 hidden items-center justify-center p-4">
+        <div class="modal-backdrop fixed inset-0 transition-opacity" aria-hidden="true"></div>
+        
+        <div class="bg-white rounded-lg shadow-xl w-full max-w-md p-6 z-10 transform transition-all scale-95 opacity-0">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-semibold text-slate-800" id="manageListModalTitle">목록 관리</h3>
+                <button type="button" class="text-slate-400 hover:text-slate-600" onclick="closeModal('manageListModal')">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" class="bi bi-x-lg" viewBox="0 0 16 16"><path d="M2.146 2.854a.5.5 0 1 1 .708-.708L8 7.293l5.146-5.147a.5.5 0 0 1 .708.708L8.707 8l5.147 5.146a.5.5 0 0 1-.708.708L8 8.707l-5.146 5.147a.5.5 0 0 1-.708-.708L7.293 8 2.146 2.854Z"/></svg>
+                </button>
+            </div>
+            
+            <!-- 목록 추가 버튼 -->
+            <div class="mb-3">
+                <label for="addNewItemInput" class="block text-sm font-medium text-slate-700 mb-1">새 항목 빠른 추가:</label>
+                <div class="flex space-x-2">
+                    <input type="text" id="addNewItemInput" class="flex-grow w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500 transition" placeholder="추가할 항목 이름...">
+                    <button type="button" id="addNewItemBtn" class="flex-shrink-0 px-4 py-2 text-sm font-medium text-white bg-sky-600 hover:bg-sky-700 rounded-lg shadow-sm transition">
+                        추가
+                    </button>
+                </div>
+            </div>
+
+            <!-- 항목 리스트 -->
+            <div class="border-t border-slate-200 mt-4 pt-4">
+                <p class="text-sm text-slate-600 mb-2">저장된 항목 (클릭하여 삭제):</p>
+                <div id="manageListContent" class="max-h-60 overflow-y-auto space-y-1 pr-2">
+                    <!-- 항목이 여기에 동적으로 추가됩니다 -->
+                </div>
+            </div>
+
+            <div class="mt-6 text-right">
+                <button type="button" class="px-5 py-2 text-sm font-medium text-white bg-slate-700 hover:bg-slate-800 rounded-lg shadow-sm transition" onclick="closeModal('manageListModal')">
+                    닫기
+                </button>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- 3. 성공/실패 알림 모달 -->
+    <div id="alertModal" class="fixed inset-0 z-[60] hidden items-center justify-center p-4">
+        <div class="modal-backdrop fixed inset-0 transition-opacity" aria-hidden="true"></div>
+        
+        <div class="bg-white rounded-lg shadow-xl w-full max-w-sm p-6 z-10 transform transition-all scale-95 opacity-0">
+            <div class="text-center">
+                <!-- 성공 아이콘 -->
+                <div id="alertIconSuccess" class="hidden mx-auto mb-4 w-12 h-12 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor" class="bi bi-check-lg" viewBox="0 0 16 16"><path d="M12.736 3.97a.733.733 0 0 1 1.047 0c.286.289.29.756.01 1.05L7.88 12.01a.733.733 0 0 1-1.065.02L3.217 8.384a.757.757 0 0 1 0-1.06.733.733 0 0 1 1.047 0l3.052 3.093 5.4-6.425a.247.247 0 0 1 .02-.022Z"/></svg>
+                </div>
+                <!-- 실패 아이콘 -->
+                <div id="alertIconError" class="hidden mx-auto mb-4 w-12 h-12 rounded-full bg-red-100 text-red-600 flex items-center justify-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor" class="bi bi-exclamation-lg" viewBox="0 0 16 16"><path d="M7.005 3.1a1 1 0 1 1 1.99 0l-.388 6.35a.61.61 0 0 1-1.214 0L7.005 3.1ZM7 12a1 1 0 1 1 2 0 1 1 0 0 1-2 0Z"/></svg>
+                </div>
+                
+                <h3 class="text-lg font-semibold text-slate-800" id="alertModalTitle"></h3>
+                <p class="text-sm text-slate-600 mt-2" id="alertModalMessage"></p>
+            </div>
+            <div class="mt-6 text-center">
+                <button type="button" class="w-full px-4 py-2 text-sm font-medium text-white bg-sky-600 hover:bg-sky-700 rounded-lg shadow-sm transition" onclick="closeModal('alertModal')">
+                    확인
+                </button>
+            </div>
+        </div>
+    </div>
+
+
+    <script>
+        // --- 전역 변수 및 DOM 요소 ---
+        const form = document.getElementById('stockForm');
+        const step1 = document.getElementById('formStep1');
+        const step2 = document.getElementById('formStep2');
+        const nextStepBtn = document.getElementById('nextStepBtn');
+        const prevStepBtn = document.getElementById('prevStepBtn');
+        const resetFormBtn = document.getElementById('resetFormBtn');
+        const loadingSpinner = document.getElementById('loadingSpinner');
+        
+        // 입력 필드
+        const dateInput = document.getElementById('date');
+        const accountSelect = document.getElementById('account');
+        const itemNameInput = document.getElementById('itemName');
+        const itemNameList = document.getElementById('itemNameList');
+        const numericInputs = [
+            document.getElementById('volume'),
+            document.getElementById('price'),
+            document.getElementById('avgPrice'),
+            document.getElementById('balance'),
+            document.getElementById('fees')
+        ];
+
+        // 모달 관련
+        const addItemModal = document.getElementById('addItemModal');
+        const manageListModal = document.getElementById('manageListModal');
+        const alertModal = document.getElementById('alertModal');
+        const newItemInput = document.getElementById('newItemInput');
+        const saveNewItemBtn = document.getElementById('saveNewItemBtn');
+        const manageListContent = document.getElementById('manageListContent');
+        const addNewItemInput = document.getElementById('addNewItemInput');
+        const addNewItemBtn = document.getElementById('addNewItemBtn');
+
+        // 로컬 스토리지 키
+        const ACCOUNT_LIST_KEY = 'stockAppAccountList';
+        const ITEM_LIST_KEY = 'stockAppItemList';
+
+        // 현재 모달 상태
+        let currentModalContext = {
+            type: null, // 'account' or 'item'
+            targetSelect: null, // accountSelect
+            targetDatalist: null, // itemNameList
+            storageKey: null // ACCOUNT_LIST_KEY
+        };
+
+        // --- 초기화 함수 ---
+        document.addEventListener('DOMContentLoaded', () => {
+            // 오늘 날짜로 기본 설정
+            dateInput.value = new Date().toISOString().split('T')[0];
+            
+            // 로컬 스토리지에서 목록 불러오기
+            loadListFromStorage(ACCOUNT_LIST_KEY, accountSelect, null);
+            loadListFromStorage(ITEM_LIST_KEY, null, itemNameList);
+
+            // 이벤트 리스너 바인딩
+            bindStepControlEvents();
+            bindFormSubmission();
+            bindModalControls();
+            bindNumericInputs();
+        });
+
+
+        // --- 1. 단계(Step) 제어 ---
+        function bindStepControlEvents() {
+            nextStepBtn.addEventListener('click', () => {
+                // 1단계의 필수 항목 검증
+                const step1Inputs = step1.querySelectorAll('input[required], select[required]');
+                let allValid = true;
+                step1Inputs.forEach(input => {
+                    if (!input.checkValidity()) {
+                        allValid = false;
+                        // submit 이벤트가 아니므로 수동으로 오류 메시지 표시 (브라우저 기본)
+                        input.reportValidity();
+                    }
+                });
+
+                if (allValid) {
+                    goToStep(2);
+                }
+            });
+
+            prevStepBtn.addEventListener('click', () => {
+                goToStep(1);
+            });
+
+            resetFormBtn.addEventListener('click', () => {
+                form.reset();
+                dateInput.value = new Date().toISOString().split('T')[0];
+                goToStep(1);
+            });
+        }
+
+        function goToStep(step) {
+            if (step === 1) {
+                step1.classList.remove('form-step-hidden');
+                step1.classList.add('form-step-visible');
+                step2.classList.add('form-step-hidden');
+                step2.classList.remove('form-step-visible');
+            } else if (step === 2) {
+                step1.classList.add('form-step-hidden');
+                step1.classList.remove('form-step-visible');
+                step2.classList.remove('form-step-hidden');
+                step2.classList.add('form-step-visible');
+            }
+        }
+
+        // --- 2. 폼 제출 (Google Apps Script 연동) ---
+        function bindFormSubmission() {
+            form.addEventListener('submit', async (event) => {
+                event.preventDefault();
+                
+                // 2단계 유효성 검사 (필수는 아니지만, 최종 확인)
+                const step2Inputs = step2.querySelectorAll('input[required], select[required]');
+                let allValid = true;
+                step2Inputs.forEach(input => {
+                    if (!input.checkValidity()) {
+                        allValid = false;
+                        input.reportValidity();
+                    }
+                });
+
+                if (!allValid) {
+                    showAlert('입력 오류', '필수 항목(*)을 모두 입력해주세요.', 'error');
+                    return;
+                }
+
+                // 로딩 스피너 표시
+                loadingSpinner.classList.remove('hidden');
+
+                // 폼 데이터를 객체로 수집
+                const formData = new FormData(form);
+                const data = {};
+                formData.forEach((value, key) => {
+                    data[key] = value;
+                });
+
+                // Helper to remove commas from numeric strings
+                function unformatNumber(str) {
+                    if (typeof str !== 'string' || !str) return '';
+                    // 콤마(,)만 제거합니다. 음수(-)와 소수점(.)은 유지합니다.
+                    return str.replace(/,/g, '');
+                }
+
+                // Clean and format data for submission
+                const cleanedData = {
+                    category: data.category,
+                    date: data.date,
+                    account: data.account,
+                    itemName: data.itemName,
+                    volume: unformatNumber(data.volume),
+                    price: unformatNumber(data.price),
+                    avgPrice: unformatNumber(data.avgPrice),
+                    balance: unformatNumber(data.balance),
+                    fees: unformatNumber(data.fees) || '0', // 수수료는 선택이므로 비어있으면 0
+                    description: data.description || '' // 설명은 선택
+                };
+
+                // --- Google Apps Script 연동 ---
+                // [중요] 1. 아래 주석을 제거하고
+                // [중요] 2. 'YOUR_..._URL' 부분에 Google Apps Script 배포 URL을 붙여넣으세요.
+                
+                const webAppUrl = 'YOUR_GOOGLE_APPS_SCRIPT_WEB_APP_URL';
+                
+                
+                /* // [실제 연동 코드] 1. 이 줄의 주석을 제거하세요.
+                
+                try {
+                    // CORS 모드로 JSON 응답을 기대합니다.
+                    const response = await fetch(webAppUrl, {
+                        method: 'POST',
+                        mode: 'cors', // CORS 모드
+                        cache: 'no-cache', // 캐시 사용 안 함
+                        headers: {
+                            // Apps Script는 'text/plain'으로도 JSON을 잘 받습니다.
+                            'Content-Type': 'text/plain;charset=utf-8', 
+                        },
+                        body: JSON.stringify(cleanedData), // 데이터를 JSON 문자열로 전송
+                        redirect: 'follow' // Apps Script 리다이렉션 따르기
+                    });
+                    
+                    const result = await response.json(); // 응답을 JSON으로 파싱
+
+                    if (result.result === "success") {
+                        // 성공
+                        showAlert('저장 완료', `데이터가 ${result.row}행에 성공적으로 저장되었습니다.`, 'success');
+                        form.reset();
+                        dateInput.value = new Date().toISOString().split('T')[0];
+                        goToStep(1);
+                    } else {
+                        // Apps Script에서 보낸 에러
+                        showAlert('저장 실패', `스크립트 오류: ${result.message}`, 'error');
+                    }
+
+                } catch (error) {
+                    // 네트워크 오류 또는 fetch 실패
+                    console.error('Fetch Error:', error);
+                    showAlert('저장 실패', `네트워크 또는 CORS 오류가 발생했습니다. (콘솔 확인) ${error.message}`, 'error');
+                } finally {
+                    loadingSpinner.classList.add('hidden');
+                }
+                
+                */ // [실제 연동 코드] 2. 이 줄의 주석을 제거하세요.
+                
+
+                
+                // --- 시뮬레이션 코드 ---
+                // [중요] 실제 연동 코드를 활성화한 후, 아래 시뮬레이션 코드를 삭제하거나 주석 처리하세요.
+                
+                await new Promise(resolve => setTimeout(resolve, 1000)); // 1초 대기
+                
+                console.log('제출된 데이터 (시뮬레이션):', cleanedData);
+                loadingSpinner.classList.add('hidden');
+                
+                // 성공 알림 (시뮬레이션)
+                showAlert('저장 완료 (시뮬레이션)', '데이터가 성공적으로 전송되었습니다.', 'success');
+                
+                // 폼 리셋 및 1단계로 이동
+                form.reset();
+                dateInput.value = new Date().toISOString().split('T')[0];
+                goToStep(1);
+                
+                // 실패 알림 (시뮬레이션)
+                // showAlert('저장 실패 (시뮬레이션)', '테스트용 오류 메시지입니다.', 'error');
+                
+                // --- 시뮬레이션 종료 ---
+
+            });
+        }
+
+        // --- 3. 목록 관리 (로컬 스토리지) ---
+
+        function getListFromStorage(key) {
+            return JSON.parse(localStorage.getItem(key) || '[]');
+        }
+
+        function saveListToStorage(key, list) {
+            // 중복 제거 및 정렬
+            const uniqueList = [...new Set(list)].sort();
+            localStorage.setItem(key, JSON.stringify(uniqueList));
+            return uniqueList;
+        }
+
+        function loadListFromStorage(key, selectEl, datalistEl) {
+            const list = getListFromStorage(key);
+            
+            if (selectEl) {
+                // 기존 옵션들(기본값)을 리스트에 추가
+                const defaultOptions = Array.from(selectEl.options).map(opt => opt.value);
+                const combinedList = saveListToStorage(key, [...defaultOptions, ...list]);
+                
+                // Select 목록 새로고침
+                refreshSelectOptions(selectEl, combinedList);
+            }
+            
+            if (datalistEl) {
+                // 기존 옵션들(기본값)을 리스트에 추가
+                const defaultOptions = Array.from(datalistEl.options).map(opt => opt.value);
+                const combinedList = saveListToStorage(key, [...defaultOptions, ...list]);
+
+                // Datalist 목록 새로고침
+                refreshDatalistOptions(datalistEl, combinedList);
+            }
+        }
+
+        function refreshSelectOptions(selectEl, list) {
+            selectEl.innerHTML = ''; // 비우기
+            list.forEach(item => {
+                const option = document.createElement('option');
+                option.value = item;
+                option.textContent = item;
+                selectEl.appendChild(option);
+            });
+        }
+
+        function refreshDatalistOptions(datalistEl, list) {
+            datalistEl.innerHTML = ''; // 비우기
+            list.forEach(item => {
+                const option = document.createElement('option');
+                option.value = item;
+                datalistEl.appendChild(option);
+            });
+        }
+
+        function addItemToList(key, item, selectEl, datalistEl, inputEl) {
+            if (!item || item.trim() === '') return;
+            
+            const list = getListFromStorage(key);
+            list.push(item.trim());
+            const newList = saveListToStorage(key, list); // 중복제거 및 저장
+
+            if (selectEl) {
+                refreshSelectOptions(selectEl, newList);
+                selectEl.value = item.trim(); // 새 항목 선택
+            }
+            if (datalistEl) {
+                refreshDatalistOptions(datalistEl, newList);
+                inputEl.value = item.trim(); // 새 항목 입력
+            }
+        }
+
+        function removeItemFromList(key, item, selectEl, datalistEl) {
+            let list = getListFromStorage(key);
+            list = list.filter(i => i !== item);
+            const newList = saveListToStorage(key, list);
+
+            if (selectEl) refreshSelectOptions(selectEl, newList);
+            if (datalistEl) refreshDatalistOptions(datalistEl, newList);
+        }
+
+        // --- 4. 모달 제어 ---
+        
+        function bindModalControls() {
+            // '목록 관리' 버튼
+            document.getElementById('manageAccountList').addEventListener('click', () => {
+                currentModalContext = {
+                    type: '계좌',
+                    targetSelect: accountSelect,
+                    targetDatalist: null,
+                    targetInput: null,
+                    storageKey: ACCOUNT_LIST_KEY
+                };
+                openManageModal();
+            });
+
+            document.getElementById('manageItemList').addEventListener('click', () => {
+                currentModalContext = {
+                    type: '종목명',
+                    targetSelect: null,
+                    targetDatalist: itemNameList,
+                    targetInput: itemNameInput,
+                    storageKey: ITEM_LIST_KEY
+                };
+                openManageModal();
+            });
+
+            // '목록 관리' 모달 내부의 '추가' 버튼
+            addNewItemBtn.addEventListener('click', () => {
+                const item = addNewItemInput.value;
+                if (item && item.trim() !== '') {
+                    addItemToList(
+                        currentModalContext.storageKey, 
+                        item, 
+                        currentModalContext.targetSelect, 
+                        currentModalContext.targetDatalist,
+                        currentModalContext.targetInput
+                    );
+                    addNewItemInput.value = '';
+                    // 관리 모달 목록 새로고침
+                    populateManageList();
+                }
+            });
+        }
+
+        // '목록 관리' 모달 열기
+        function openManageModal() {
+            document.getElementById('manageListModalTitle').textContent = `${currentModalContext.type} 목록 관리`;
+            addNewItemInput.placeholder = `추가할 ${currentModalContext.type}...`;
+            populateManageList();
+            openModal('manageListModal');
+        }
+
+        // '목록 관리' 모달의 리스트 채우기
+        function populateManageList() {
+            manageListContent.innerHTML = '';
+            const list = getListFromStorage(currentModalContext.storageKey);
+            
+            if (list.length === 0) {
+                manageListContent.innerHTML = '<p class="text-slate-500 text-sm italic">저장된 항목이 없습니다.</p>';
+                return;
+            }
+
+            list.forEach(item => {
+                const div = document.createElement('div');
+                div.className = 'flex justify-between items-center p-2 rounded-lg hover:bg-slate-100';
+                
+                const span = document.createElement('span');
+                span.textContent = item;
+                span.className = 'text-slate-700';
+                
+                const button = document.createElement('button');
+                button.type = 'button';
+                button.className = 'text-red-500 hover:text-red-700 p-1';
+                button.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-trash3-fill" viewBox="0 0 16 16"><path d="M11 1.5v1h3.5a.5.5 0 0 1 0 1h-.538l-.853 10.66A2 2 0 0 1 11.115 16h-6.23a2 2 0 0 1-1.994-1.84L2.038 3.5H1.5a.5.5 0 0 1 0-1H5v-1A1.5 1.5 0 0 1 6.5 0h3A1.5 1.5 0 0 1 11 1.5zm-5 0v1h4v-1a.5.5 0 0 0-.5-.5h-3a.5.5 0 0 0-.5.5zM4.5 5.024l.5 8.5a.5.5 0 1 0 .998-.06l-.5-8.5a.5.5 0 1 0-.998.06zm3 0l.5 8.5a.5.5 0 1 0 .998-.06l-.5-8.5a.5.5 0 1 0-.998.06zm3 0l.5 8.5a.5.5 0 1 0 .998-.06l-.5-8.5a.5.5 0 1 0-.998.06z"/></svg>';
+                
+                button.addEventListener('click', () => {
+                    // 항목 삭제
+                    removeItemFromList(
+                        currentModalContext.storageKey, 
+                        item, 
+                        currentModalContext.targetSelect,
+                        currentModalContext.targetDatalist
+                    );
+                    // 목록 즉시 갱신
+                    populateManageList();
+                });
+
+                div.appendChild(span);
+                div.appendChild(button);
+                manageListContent.appendChild(div);
+            });
+        }
+
+        // (사용 보류) '새 항목 추가' 모달
+        function openAddItemModal(type, targetSelect, targetDatalist, storageKey) {
+            currentModalContext = { type, targetSelect, targetDatalist, storageKey };
+            document.getElementById('addItemModalTitle').textContent = `새 ${type} 추가`;
+            newItemInput.value = '';
+            newItemInput.placeholder = `추가할 ${type} 이름...`;
+            document.getElementById('newItemError').classList.add('hidden');
+            openModal('addItemModal');
+        }
+
+        // (사용 보류) '새 항목 추가' 모달의 저장 버튼
+        saveNewItemBtn.addEventListener('click', () => {
+            const item = newItemInput.value;
+            if (!item || item.trim() === '') {
+                document.getElementById('newItemError').classList.remove('hidden');
+                return;
+            }
+            
+            addItemToList(
+                currentModalContext.storageKey, 
+                item, 
+                currentModalContext.targetSelect, 
+                currentModalContext.targetDatalist,
+                currentModalContext.type === '종목명' ? itemNameInput : null
+            );
+            
+            closeModal('addItemModal');
+        });
+
+        // 범용 모달 열기
+        function openModal(modalId) {
+            const modal = document.getElementById(modalId);
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            // 애니메이션을 위해 약간의 딜레이
+            setTimeout(() => {
+                modal.querySelector('.modal-backdrop').classList.add('opacity-100');
+                modal.querySelector('.z-10').classList.add('scale-100', 'opacity-100');
+                modal.querySelector('.z-10').classList.remove('scale-95', 'opacity-0');
+            }, 10);
+        }
+
+        // 범용 모달 닫기
+        function closeModal(modalId) {
+            const modal = document.getElementById(modalId);
+            modal.querySelector('.modal-backdrop').classList.remove('opacity-100');
+            modal.querySelector('.z-10').classList.remove('scale-100', 'opacity-100');
+            modal.querySelector('.z-10').classList.add('scale-95', 'opacity-0');
+            
+            setTimeout(() => {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+            }, 200); // transition duration
+        }
+
+        // 성공/실패 알림 모달 표시
+        function showAlert(title, message, type = 'success') {
+            document.getElementById('alertModalTitle').textContent = title;
+            document.getElementById('alertModalMessage').textContent = message;
+
+            if (type === 'success') {
+                document.getElementById('alertIconSuccess').classList.remove('hidden');
+                document.getElementById('alertIconError').classList.add('hidden');
+            } else {
+                document.getElementById('alertIconSuccess').classList.add('hidden');
+                document.getElementById('alertIconError').classList.remove('hidden');
+            }
+            
+            openModal('alertModal');
+        }
+
+
+        // --- 5. 숫자 콤마 서식 ---
+
+        function bindNumericInputs() {
+            numericInputs.forEach(input => {
+                input.addEventListener('input', handleNumericInput);
+            });
+        }
+        
+        // [수정됨] 숫자 입력 필드에 3자리 콤마를 자동으로 추가하는 함수 (음수 및 소수점 지원)
+        function handleNumericInput(event) {
+            const input = event.target;
+            let value = input.value;
+            let caretPos = input.selectionStart;
+            let originalLength = value.length;
+
+            // 1. 음수 기호, 소수점, 숫자만 허용
+            let sign = '';
+            if (value.startsWith('-')) {
+                sign = '-';
+            }
+            
+            // 2. 부호, 콤마를 제외한 부분에서 숫자와 소수점만 추출
+            let numericPart = value.replace(/^-/, '');
+            
+            // 3. 소수점 기준으로 분리
+            let parts = numericPart.split('.');
+            // 정수부는 숫자만 남김 (콤마 제거)
+            let integerPart = parts[0].replace(/[^\d]/g, ''); 
+            let decimalPart = parts[1];
+
+            // 4. 정수부에 콤마 추가
+            let formattedInteger = integerPart.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+            if (formattedInteger === '' && (sign || decimalPart !== undefined)) {
+                // 예: "-"만 입력했거나 ".5"만 입력한 경우
+                formattedInteger = '0'; 
+            }
+
+            // 5. 값 재조합
+            let newValue = sign + formattedInteger;
+            if (decimalPart !== undefined) {
+                // 소수점 이하는 숫자만 허용
+                newValue += '.' + decimalPart.replace(/[^\d]/g, '');
+            }
+
+            // 6. 값이 변경된 경우에만 input에 설정 (무한 루프 방지)
+            if (input.value !== newValue) {
+                input.value = newValue;
+
+                // 7. 콤마 추가/삭제로 인한 커서 위치 조정
+                let newLength = input.value.length;
+                let caretShift = newLength - originalLength;
+                
+                // 커서 위치가 음수가 되지 않도록 조정
+                let newCaretPos = caretPos + caretShift;
+                if (newCaretPos < 0) {
+                    newCaretPos = sign.length; // 부호가 있다면 부호 뒤로
+                }
+
+                // 사용자가 방금 입력한 내용(예: 콤마)으로 인해 커서가 이상하게 튀는 것을 방지
+                if (event.inputType === 'insertText' && (event.data === ',' || event.data === '-')) {
+                     input.setSelectionRange(caretPos, caretPos);
+                } else {
+                     input.setSelectionRange(newCaretPos, newCaretPos);
+                }
+            }
+        }
+
+    </script>
+</body>
+</html>
+
